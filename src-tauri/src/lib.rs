@@ -1,6 +1,6 @@
 use tauri::{Emitter, Manager, Runtime, Window};
 
-use crate::fm_network::{action::FMAction, packet::FMPacket};
+use crate::fm_network::action::FMAction;
 
 mod fm_network;
 
@@ -12,21 +12,21 @@ fn greet(name: &str) -> String {
 
 #[tauri::command]
 async fn start_udp() {
-    fm_network::handler::run().await;
+    fm_network::run().await;
 }
 
 #[tauri::command]
 async fn stop_udp() {
-    fm_network::handler::stop().await;
+    fm_network::stop().await;
 }
 
 #[tauri::command]
 async fn add_jpg_decoded_listener<R: Runtime>(window: Window<R>) {
-    fm_network::handler::listen(move |data| {
+    fm_network::listen(move |data| {
         if let FMAction::JpegDecoded { addr, data } = data {
             let _ = window
                 .app_handle()
-                .emit_to(window.label(), "fm://jpeg_decoded", data);
+                .emit_to(window.label(), "fm://jpeg_decoded", (addr, data));
         }
     })
     .await;
@@ -34,16 +34,20 @@ async fn add_jpg_decoded_listener<R: Runtime>(window: Window<R>) {
 
 #[tauri::command]
 async fn add_client_changed_listener<R: Runtime>(window: Window<R>) {
-    fm_network::handler::listen(move |data| {
+    dbg!("Adding client changed listener");
+    fm_network::listen(move |data| {
         if let FMAction::ClientChanged { add, remove } = data {
-            let _ = window
-                .app_handle()
-                .emit_to(window.label(), "fm://client_changed", (add, remove));
-            dbg!(
-                "Emitted Client Changed - Added: {:?}, Removed: {:?}",
-                add,
-                remove
-            );
+            let _ =
+                window
+                    .app_handle()
+                    .emit_to(window.label(), "fm://client_changed", (add, remove));
+
+            if let Some(add) = add {
+                dbg!(add);
+            }
+            if let Some(remove) = remove {
+                dbg!(remove);
+            }
         }
     })
     .await;

@@ -1,20 +1,4 @@
-use std::net::SocketAddr;
-
 use crate::fm_network::jpeg_decoder::JPEGHeader;
-
-pub struct FMSend {
-    from: SocketAddr,
-    send_type: FMSendType,
-    data: FMPacket,
-}
-
-pub enum FMSendType {
-    Target(SocketAddr),
-    Broadcast,
-    Other,
-}
-
-impl FMSend {}
 
 pub enum FMPacket {
     Unknown,
@@ -22,8 +6,6 @@ pub enum FMPacket {
     StringPacket { data: String },
     JPEGPacket { header: JPEGHeader, data: Vec<u8> },
 }
-
-const HEADER_LENGTH: usize = 18;
 
 impl FMPacket {
     pub fn new(raw_data: &[u8]) -> Self {

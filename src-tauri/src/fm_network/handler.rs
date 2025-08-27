@@ -1,41 +1,47 @@
-use lazy_static::lazy_static;
 use std::net::SocketAddr;
+use std::ops::Deref;
 use std::sync::Arc;
-use std::{collections::HashMap, ops::Deref};
-use tokio::{net::UdpSocket, sync::RwLock, task::JoinHandle};
+use tokio::{net::UdpSocket, task::JoinHandle};
 
 use crate::fm_network::action::FMAction;
 use crate::fm_network::client::ClientStatus;
 use crate::fm_network::jpeg_decoder::{JPEGDecoder, JPEGHeader};
 use crate::fm_network::packet::FMPacket;
+use crate::fm_network::{
+    emit_action, send, CLIENTS, FM_CLIENT_PORT, FM_SERVER_PORT, JPEG_DECODERS,
+};
 
-const FM_SERVER_PORT: u16 = 3333;
-const FM_CLIENT_PORT: u16 = 3334;
-
-lazy_static! {
-    static ref CLIENTS: RwLock<HashMap<SocketAddr, ClientStatus>> = RwLock::new(HashMap::new());
-    static ref SOCKET_HANDLER: RwLock<SocketHandler> = RwLock::new(SocketHandler {
-        socket: None,
-        task: None,
-        client_live_checker: None,
-    });
-    static ref LISTENERS: RwLock<Vec<Arc<Listener>>> = RwLock::new(Vec::new());
-    static ref JPEG_DECODERS: RwLock<HashMap<SocketAddr, JPEGDecoder>> =
-        RwLock::new(HashMap::new());
-}
-
-struct Listener {
-    callback: Arc<dyn Fn(&FMAction) + Send + Sync>,
-}
-
-struct SocketHandler {
+pub(crate) struct SocketHandler {
     socket: Option<Arc<UdpSocket>>,
     task: Option<JoinHandle<()>>,
     client_live_checker: Option<JoinHandle<()>>,
 }
 
 impl SocketHandler {
-    pub(crate) fn init(&mut self, socket: UdpSocket) {
+    pub fn new() -> Self {
+        Self {
+            socket: None,
+            task: None,
+            client_live_checker: None,
+        }
+    }
+
+    pub(crate) async fn run(&mut self) {
+        if let Some(_) = self.socket {
+            return;
+        }
+
+        if let Some(_) = self.task {
+            return;
+        }
+
+        let socket_result = UdpSocket::bind(format!("0.0.0.0:{}", FM_SERVER_PORT)).await;
+        if let Ok(socket) = socket_result {
+            self.init(socket);
+        }
+    }
+
+    fn init(&mut self, socket: UdpSocket) {
         let arc_socket = Arc::new(socket);
         let socket = arc_socket.clone();
 
@@ -62,8 +68,6 @@ impl SocketHandler {
                         }
 
                         send(addr, FMPacket::Heartbeat).await;
-
-                        dbg!(&len, &addr);
 
                         let data = &buf[..len];
 
@@ -97,6 +101,7 @@ impl SocketHandler {
                     }
                 }
 
+                dbg!(&pending_remove);
                 for addr in pending_remove.iter() {
                     clients.remove(addr);
                     emit_action(FMAction::ClientChanged {
@@ -111,9 +116,11 @@ impl SocketHandler {
         self.task = Some(task);
         self.socket = Some(socket);
         self.client_live_checker = Some(live_checker);
+
+        println!("SocketHandler initialized at {:?}", self.socket);
     }
 
-    fn stop(&mut self) {
+    pub(crate) fn stop(&mut self) {
         if let Some(task) = self.task.take() {
             task.abort();
         }
@@ -123,70 +130,26 @@ impl SocketHandler {
             live_checker.abort();
         }
         self.client_live_checker = None;
-    }
-}
 
-pub async fn run() {
-    let mut handler = SOCKET_HANDLER.write().await;
-
-    if let Some(_) = handler.socket {
-        return;
+        println!("SocketHandler stopped");
     }
 
-    if let Some(_) = handler.task {
-        return;
-    }
-
-    let socket_result = UdpSocket::bind(format!("0.0.0.0:{}", FM_SERVER_PORT)).await;
-    if let Ok(socket) = socket_result {
-        handler.init(socket);
-    }
-}
-
-pub async fn stop() {
-    let mut handler = SOCKET_HANDLER.write().await;
-
-    handler.stop();
-
-    let mut clients = CLIENTS.write().await;
-    clients.clear();
-
-    let mut listeners = LISTENERS.write().await;
-    listeners.clear();
-
-    let mut decoders = JPEG_DECODERS.write().await;
-    decoders.clear();
-}
-
-pub async fn listen<F>(callback: F)
-where
-    F: Fn(&FMAction) + Send + Sync + 'static,
-{
-    let mut writer = LISTENERS.write().await;
-    writer.push(Arc::new(Listener {
-        callback: Arc::new(callback),
-    }));
-}
-
-pub async fn send(mut addr: SocketAddr, packet: FMPacket) {
-    if let Some(socket) = &SOCKET_HANDLER.read().await.socket {
-        if let Some(send_bytes) = packet.to_bytes() {
-            addr.set_port(FM_CLIENT_PORT);
-            match socket.send_to(send_bytes.as_slice(), addr).await {
-                Ok(_) => {
-                    dbg!(send_bytes.len(), addr);
-                }
-                Err(e) => {
-                    eprintln!("Error sending data: {}", e);
+    pub(crate) async fn send(&self, mut addr: SocketAddr, packet: FMPacket) {
+        if let Some(socket) = &self.socket {
+            if let Some(send_bytes) = packet.to_bytes() {
+                addr.set_port(FM_CLIENT_PORT);
+                match socket.send_to(send_bytes.as_slice(), addr).await {
+                    Ok(_) => {
+                        if let FMPacket::StringPacket { data } = packet {
+                            dbg!(&data, addr);
+                        };
+                    }
+                    Err(e) => {
+                        eprintln!("Error sending data: {}", e);
+                    }
                 }
             }
         }
-    }
-}
-
-async fn emit_action<'a>(action: FMAction<'a>) {
-    for listener in LISTENERS.read().await.iter() {
-        listener.callback.deref()(&action);
     }
 }
 

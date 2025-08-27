@@ -1,4 +1,4 @@
-use std::{io::Read, sync::Arc};
+use std::io::Read;
 
 use flate2::read::GzDecoder;
 
@@ -10,12 +10,12 @@ pub struct JPEGDecoder {
 
 #[derive(Clone, Copy, Debug)]
 pub struct JPEGHeader {
-    label: i32,          // 0 - 3
-    id: i32,             // 4 - 7
-    length: i32,         // 8 - 11
-    offset: i32,         // 12 - 15
-    gzip: bool,          // 16
-    color_reduction: u8, // 17
+    // label: i32,          // 0 - 3
+    id: i32,     // 4 - 7
+    length: i32, // 8 - 11
+    offset: i32, // 12 - 15
+    gzip: bool,  // 16
+                 // color_reduction: u8, // 17
 }
 
 impl JPEGDecoder {
@@ -47,8 +47,7 @@ impl JPEGDecoder {
 
         let offset = header.offset as usize;
         let data_len = data.len();
-        dbg!(data_len);
-        dbg!(self.data.len());
+
         let end_at = offset + data_len;
         if end_at > self.header.length as usize {
             return Err("Data exceeds header length".into());
@@ -77,12 +76,12 @@ impl JPEGDecoder {
 impl JPEGHeader {
     pub fn new(data: &[u8]) -> Self {
         Self {
-            label: i32::from_le_bytes(data[0..4].try_into().unwrap()),
+            // label: i32::from_le_bytes(data[0..4].try_into().unwrap()),
             id: i32::from_le_bytes(data[4..8].try_into().unwrap()),
             length: i32::from_le_bytes(data[8..12].try_into().unwrap()),
             offset: i32::from_le_bytes(data[12..16].try_into().unwrap()),
             gzip: data[16] != 0,
-            color_reduction: data[17],
+            // color_reduction: data[17],
         }
     }
 }
