@@ -1,17 +1,48 @@
-import { useState } from "react";
+import { useReducer } from "react";
 // import reactLogo from "./assets/react.svg";
 import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
-import { listen } from "@tauri-apps/api/event";
+import Title from "./Title";
+import SingleModeScreen from "./SingleModeScreen";
+import GameViewScreenBase from "./GameViewScreenBase";
+
+export enum Mode {
+  title,
+  singleMode,
+  multiMode
+}
+
+export interface CommonProps {
+  setMode: (value: Mode) => void;
+  currentMode: Mode;
+}
+
+type SetModeAction =
+  | SetMode;
+
+class SetMode {
+  constructor(value: Mode) {
+    this.value = value;
+  }
+  value: Mode = Mode.title;
+}
+
+function ModeReducer(current: Mode, action: SetModeAction): Mode {
+  return action.value;
+}
 
 function App() {
-  const [greetMsg, setGreetMsg] = useState("");
-  const [name, setName] = useState("");
-  const [jpegData, setJpegData] = useState("");
+  const [currentMode, modeDispatcher] = useReducer(ModeReducer, Mode.title);
+  // const [currentMode, setCurrentMode] = useState<mode>(mode.title);
 
-  async function greet() {
-    // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-    setGreetMsg(await invoke("greet", { name }));
+  const commonProps = {
+    setMode: (value: Mode) => modeDispatcher(new SetMode(value)),
+    currentMode: currentMode
+  }
+
+  async function backTitle() {
+    await invoke("stop_udp");
+    modeDispatcher(new SetMode(Mode.title));
   }
 
   async function startUdp() {
@@ -22,56 +53,20 @@ function App() {
     await invoke("stop_udp");
   }
 
-  async function addJpgDecodedListener() {
-    await invoke("add_jpg_decoded_listener");
-    await listen("fm://jpeg_decoded", (data) => {
-      console.log("Received JPEG packet:", data);
-      let arr = new Uint8Array(data.payload as []);
+  switch (currentMode) {
+    case Mode.title:
+      return (
+        <Title com={commonProps}>
 
-      if (jpegData.length > 0)
-        URL.revokeObjectURL(jpegData); // Clean up the old URL if it exists
-      const url = URL.createObjectURL(new Blob([arr], { type: "image/jpeg" }));
-      setJpegData(url);
-    });
+        </ Title>
+      );
+
+    case Mode.singleMode:
+    case Mode.multiMode:
+      return (
+        <GameViewScreenBase com={commonProps}></GameViewScreenBase>
+      );
   }
-
-  async function addClientChangedListener() {
-    await invoke("add_client_changed_listener");
-    await listen("fm://client_changed", (data) => {
-      console.log("Received Client Changed:", data);
-    });
-  }
-
-  return (
-    <main className="container">
-      <h1>Welcome to Tauri + React</h1>
-
-      <div className="row">
-        <button onClick={startUdp}>Start UDP</button>
-        <button onClick={stopUdp}>Stop UDP</button>
-        <button onClick={addJpgDecodedListener}>Add Jpeg Listener</button>
-        <button onClick={addClientChangedListener}>Add Client Changed Listener</button>
-      </div>
-
-      <form
-        className="row"
-        onSubmit={(e) => {
-          e.preventDefault();
-          greet();
-        }}
-      >
-        <input
-          id="greet-input"
-          onChange={(e) => setName(e.currentTarget.value)}
-          placeholder="Enter a name..."
-        />
-        <button type="submit">Greet</button>
-      </form>
-      <p>{greetMsg}</p>
-      <p>{jpegData}</p>
-      <img src={jpegData} alt="Decoded JPEG" width="300px" height="auto" />
-    </main>
-  );
 }
 
 export default App;
