@@ -39,10 +39,10 @@ where
     }));
 }
 
-pub async fn run() {
+pub async fn run() -> bool {
     let mut handler = SOCKET_HANDLER.write().await;
 
-    handler.run().await;
+    handler.run().await
 }
 
 pub async fn stop() {

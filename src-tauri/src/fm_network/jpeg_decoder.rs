@@ -36,10 +36,12 @@ impl JPEGDecoder {
         data: &Vec<u8>,
     ) -> Result<Option<&Vec<u8>>, String> {
         if header.id != self.header.id {
-            println!(
-                "Warning: JPEG ID mismatch. Expected {}, got {}. Resetting decoder.",
-                self.header.id, header.id
-            );
+            if self.byte_received != self.header.length {
+                println!(
+                    "Warning: JPEG ID mismatch. Expected {}, got {}. Resetting decoder.",
+                    self.header.id, header.id
+                );
+            }
             self.header = header;
             self.data = vec![0; header.length as usize];
             self.byte_received = 0;

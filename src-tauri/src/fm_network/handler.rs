@@ -3,7 +3,7 @@ use std::ops::Deref;
 use std::sync::Arc;
 use tokio::{net::UdpSocket, task::JoinHandle};
 
-use crate::fm_network::action::FMAction;
+use crate::fm_network::action::{ClientChangedDetail, FMAction, JpegDecodedDetail};
 use crate::fm_network::client::ClientStatus;
 use crate::fm_network::jpeg_decoder::{JPEGDecoder, JPEGHeader};
 use crate::fm_network::packet::FMPacket;
@@ -26,19 +26,22 @@ impl SocketHandler {
         }
     }
 
-    pub(crate) async fn run(&mut self) {
+    pub(crate) async fn run(&mut self) -> bool {
         if let Some(_) = self.socket {
-            return;
+            return false;
         }
 
         if let Some(_) = self.task {
-            return;
+            return false;
         }
 
         let socket_result = UdpSocket::bind(format!("0.0.0.0:{}", FM_SERVER_PORT)).await;
         if let Ok(socket) = socket_result {
             self.init(socket);
+            return true;
         }
+
+        return false;
     }
 
     fn init(&mut self, socket: UdpSocket) {
@@ -60,11 +63,8 @@ impl SocketHandler {
                         let new_len = clients.len();
 
                         if new_len > origin_len {
-                            emit_action(FMAction::ClientChanged {
-                                add: Some(addr),
-                                remove: None,
-                            })
-                            .await;
+                            emit_action(FMAction::ClientChanged(ClientChangedDetail::added(addr)))
+                                .await;
                         }
 
                         send(addr, FMPacket::Heartbeat).await;
@@ -101,14 +101,13 @@ impl SocketHandler {
                     }
                 }
 
-                dbg!(&pending_remove);
+                if !pending_remove.is_empty() {
+                    dbg!(&pending_remove);
+                }
+
                 for addr in pending_remove.iter() {
                     clients.remove(addr);
-                    emit_action(FMAction::ClientChanged {
-                        add: None,
-                        remove: Some(*addr),
-                    })
-                    .await;
+                    emit_action(FMAction::ClientChanged(ClientChangedDetail::removed(*addr))).await;
                 }
             }
         });
@@ -162,10 +161,10 @@ async fn decode_jpeg_packet(addr: SocketAddr, header: JPEGHeader, data: &Vec<u8>
 
     match decoder.append_data(header, data) {
         Ok(Some(decoded_data)) => {
-            emit_action(FMAction::JpegDecoded {
+            emit_action(FMAction::JpegDecoded(JpegDecodedDetail::new(
                 addr,
-                data: decoded_data,
-            })
+                decoded_data,
+            )))
             .await
         }
         Err(e) => {
