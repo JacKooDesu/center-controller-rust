@@ -1,6 +1,6 @@
+use std::hash::Hash;
 use std::net::SocketAddr;
 
-#[derive(Hash)]
 pub struct ClientStatus {
     pub address: SocketAddr,
     pub last_heartbeat: std::time::Instant,
@@ -26,6 +26,12 @@ impl ClientStatus {
 impl PartialEq for ClientStatus {
     fn eq(&self, other: &Self) -> bool {
         self.address == other.address
+    }
+}
+
+impl Hash for ClientStatus {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.address.hash(state);
     }
 }
 
