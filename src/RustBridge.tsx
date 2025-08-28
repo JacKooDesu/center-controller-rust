@@ -3,19 +3,22 @@ import { listen, UnlistenFn } from "@tauri-apps/api/event";
 
 let listening: Map<string, UnlistenFn> = new Map();
 
+export interface MessageData<T> {
+    payload: T
+};
+
 export interface JPEGData {
-    payload: {
-        addr: string;
-        data: [];
-    };
+    addr: string;
+    data: [];
 }
 
 export interface ClientChangedData {
-    payload: {
-        add: string | null;
-        remove: string | null;
-    };
+    add: string | null;
+    remove: string | null;
 }
+
+type JPEGMessage = MessageData<JPEGData>;
+type ClientChangeMessage = MessageData<ClientChangedData>;
 
 export async function startUdp() {
     await invoke("start_udp");
@@ -40,17 +43,21 @@ export async function addJpgDecodedListener(id: string, cb: (bytes: []) => void)
         id + "_jpegListener",
         "fm://jpeg_decoded",
         data => {
-            if (data.payload.addr == id)
-                cb(data.payload.data);
+            if (data.addr == id)
+                cb(data.data);
         });
 }
 
-async function addListener<TData>(id: string, endpoint: string, cb: (data: TData) => void): Promise<Boolean> {
-    if (listening.has(id)) return false;
+async function addListener<TData>(id: string, endpoint: string, cb: (data: TData) => void) {
     listening.set(id, await listen(endpoint, (data) => {
-        console.log("Received " + id + " packet:", data);
-        cb(data as TData);
+        cb(data.payload as TData);
     }));
+}
 
-    return true;
+export async function send(addr: string, msg: string) {
+    console.log(addr);
+    let arr = addr.split(':');
+    console.log("Send", msg, "to", arr[0]);
+
+    await invoke("send_msg", { addr: arr[0], msg: msg });
 }

@@ -1,55 +1,125 @@
 import { useEffect, useRef, useState } from "react";
 import { CommonProps, Mode } from "./App";
-import { addClientChangeListener, ClientChangedData, startUdp, stopUdp } from "./RustBridge";
+import { addClientChangeListener, ClientChangedData, send, startUdp, stopUdp } from "./RustBridge";
 import DecoderView from "./DecoderView";
-
-interface GameViewProps {
-
-}
+import "./GameViewScreen.css"
 
 interface Props {
     com: CommonProps;
 }
 
+let clients: string[] = [];
+
 export default function GameViewScreenBase({ com }: Props) {
-    const [clients, setClients] = useState<string[]>([]);
-    const [focusing, setFocusing] = useState<string>("");
+    const [clientCount, setClientCount] = useState<number>(0);
+    const [focusTarget, setFocusing] = useState<string>("");
+    const IsFocusing = () =>
+        com.currentMode === Mode.multiMode &&
+        focusTarget.length > 0;
+    const handleFocus = com.currentMode === Mode.singleMode ?
+        async () => { } :
+        async (s: string) => {
+            clients.forEach(async (client) => {
+                await send(client, client === s ? "screen2" : "screen5");
+            });
+            console.log("Focus changed to:", s);
+            setFocusing(s);
+        };
 
     useEffect(() => {
         console.log("Initialize Network!");
 
         startUdp();
         addClientChangeListener("GameViewScreenBase", onClientChange);
-    }, [com.currentMode])
+
+        return () => { clients = []; };
+    }, [com.currentMode]);
+
+    function navbarElement() {
+        async function onResizeClick() {
+            if (!IsFocusing()) return;
+
+            await handleFocus("");
+        }
+
+        async function onExportClick() {
+            if (com.currentMode === Mode.singleMode) {
+                await send(clients[0], "export");
+            } else if (com.currentMode === Mode.multiMode && IsFocusing()) {
+                await send(focusTarget, "export");
+            }
+        }
+
+        const resizeBtn =
+            (com.currentMode === Mode.multiMode && IsFocusing()) ?
+                (<button onClick={onResizeClick}>縮放</button>) :
+                (<></>);
+
+        const exportBtn =
+            (com.currentMode === Mode.singleMode ||
+                (com.currentMode === Mode.multiMode && IsFocusing())) ?
+                (<button onClick={onExportClick}>導出學習歷程</button>) :
+                (<></>);
+
+        return (
+            <div className="navbar">
+                <button onClick={onReturnClick}>返回</button>
+                <div style={{ display: "flex", gap: "8px" }}>
+                    {clients.length > 0 && (
+                        <>
+                            {exportBtn}
+                            {resizeBtn}
+                        </>
+                    )}
+                </div>
+            </div>
+        );
+    }
 
     async function onReturnClick() {
         await stopUdp();
         com.setMode(Mode.title)
     }
 
-    async function onClientChange(data: ClientChangedData) {
-        console.log(data.payload);
+    async function onClientChange({ add, remove }: ClientChangedData) {
+        if (add) {
+            if (com.currentMode === Mode.singleMode) {
+                if (clients.length == 0)
+                    await send(add, "screen1");
+            } else {
+                await send(add, IsFocusing() ? "screen5" : "screen2");
+            }
 
-        let arr = clients;
-        if (data.payload.add) {
-            setClients([...arr, data.payload.add]);
-
+            clients.push(add);
+        } else if (remove) {
+            clients = clients.filter(c => c != remove);
         }
-        else if (data.payload.remove) {
-            setClients(arr.filter(c => c != data.payload.remove));
 
-        }
+        setClientCount(clients.length);
     }
 
     console.log("Clients:", clients);
 
     return (
         <div>
-            <button onClick={onReturnClick}>返回選單</button>
-            <br />
+            {navbarElement()}
             {com.currentMode === Mode.singleMode ?
-                <DecoderView key={clients[0]} addr={clients[0]}></DecoderView> :
-                clients.map(c => <DecoderView key={c} addr={c}></DecoderView>)
+                (
+                    <div className="singleView">
+                        <DecoderView addr={clients[0]}></DecoderView>
+                    </div>
+                ) :
+                IsFocusing() ?
+                    (
+                        <div className="singleView">
+                            <DecoderView addr={focusTarget}></DecoderView>
+                        </div>
+                    ) :
+                    (
+                        <div className="multiView">
+                            {clients.map(c => <DecoderView key={c} addr={c} setFocus={handleFocus} />)}
+                        </div>
+                    )
             }
         </div >
     );

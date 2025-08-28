@@ -1,15 +1,14 @@
 import { useReducer } from "react";
 // import reactLogo from "./assets/react.svg";
-import { invoke } from "@tauri-apps/api/core";
 import "./App.css";
 import Title from "./Title";
-import SingleModeScreen from "./SingleModeScreen";
 import GameViewScreenBase from "./GameViewScreenBase";
 
 export enum Mode {
   title,
   singleMode,
-  multiMode
+  multiMode,
+  layoutTest
 }
 
 export interface CommonProps {
@@ -38,35 +37,32 @@ function App() {
   const commonProps = {
     setMode: (value: Mode) => modeDispatcher(new SetMode(value)),
     currentMode: currentMode
-  }
+  };
 
-  async function backTitle() {
-    await invoke("stop_udp");
-    modeDispatcher(new SetMode(Mode.title));
-  }
+  let content = (() => {
+    switch (currentMode) {
+      case Mode.title:
+        return (
+          <Title com={commonProps}>
 
-  async function startUdp() {
-    await invoke("start_udp");
-  }
+          </ Title>
+        );
 
-  async function stopUdp() {
-    await invoke("stop_udp");
-  }
+      case Mode.singleMode:
+      case Mode.multiMode:
+      case Mode.layoutTest:
+        return (
+          <GameViewScreenBase com={commonProps}></GameViewScreenBase>
+        );
+    }
+  })();
 
-  switch (currentMode) {
-    case Mode.title:
-      return (
-        <Title com={commonProps}>
-
-        </ Title>
-      );
-
-    case Mode.singleMode:
-    case Mode.multiMode:
-      return (
-        <GameViewScreenBase com={commonProps}></GameViewScreenBase>
-      );
-  }
+  return (
+    <div className="container">
+      {content}
+    </div>
+  )
 }
+
 
 export default App;
