@@ -67,7 +67,7 @@ impl SocketHandler {
                                 .await;
                         }
 
-                        send(addr, FMPacket::Heartbeat).await;
+                        send(addr.into(), FMPacket::Heartbeat).await;
 
                         let data = &buf[..len];
 

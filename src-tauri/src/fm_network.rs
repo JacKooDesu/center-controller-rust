@@ -59,8 +59,39 @@ pub async fn stop() {
     decoders.clear();
 }
 
-pub async fn send(addr: SocketAddr, packet: FMPacket) {
-    SOCKET_HANDLER.read().await.send(addr, packet).await;
+pub enum Addr {
+    String(String),
+    SocketAddr(SocketAddr),
+}
+
+impl Into<SocketAddr> for Addr {
+    fn into(self) -> SocketAddr {
+        match self {
+            Addr::String(ip) => {
+                let addr: SocketAddr = format!("{}:{}", ip, FM_CLIENT_PORT)
+                    .parse()
+                    .expect("Invalid IP address");
+                addr
+            }
+            Addr::SocketAddr(addr) => addr,
+        }
+    }
+}
+
+impl From<String> for Addr {
+    fn from(ip: String) -> Self {
+        Addr::String(ip)
+    }
+}
+
+impl From<SocketAddr> for Addr {
+    fn from(addr: SocketAddr) -> Self {
+        Addr::SocketAddr(addr)
+    }
+}
+
+pub async fn send(addr: Addr, packet: FMPacket) {
+    SOCKET_HANDLER.read().await.send(addr.into(), packet).await;
 }
 
 pub(crate) async fn emit_action<'a>(action: FMAction<'a>) {

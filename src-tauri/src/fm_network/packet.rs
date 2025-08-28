@@ -39,6 +39,7 @@ impl FMPacket {
             Self::StringPacket { data } => {
                 let mut bytes = vec![];
                 bytes.push(1); // meta byte index 0 => string = 1
+                bytes.push(0); // target type, not care
                 bytes.extend_from_slice(data.as_bytes());
                 Some(bytes)
             }
