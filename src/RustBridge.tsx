@@ -17,9 +17,6 @@ export interface ClientChangedData {
     remove: string | null;
 }
 
-type JPEGMessage = MessageData<JPEGData>;
-type ClientChangeMessage = MessageData<ClientChangedData>;
-
 export async function startUdp() {
     await invoke("start_udp");
 }

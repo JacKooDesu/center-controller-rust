@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { CommonProps, Mode } from "./App";
 import { addClientChangeListener, ClientChangedData, send, startUdp, stopUdp } from "./RustBridge";
 import DecoderView from "./DecoderView";
@@ -11,7 +11,7 @@ interface Props {
 let clients: string[] = [];
 
 export default function GameViewScreenBase({ com }: Props) {
-    const [clientCount, setClientCount] = useState<number>(0);
+    const [, setClientCount] = useState<number>(0);
     const [focusTarget, setFocusing] = useState<string>("");
     const IsFocusing = () =>
         com.currentMode === Mode.multiMode &&
