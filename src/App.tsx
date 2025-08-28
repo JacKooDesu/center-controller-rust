@@ -26,7 +26,7 @@ class SetMode {
   value: Mode = Mode.title;
 }
 
-function ModeReducer(current: Mode, action: SetModeAction): Mode {
+function ModeReducer(_current: Mode, action: SetModeAction): Mode {
   return action.value;
 }
 
