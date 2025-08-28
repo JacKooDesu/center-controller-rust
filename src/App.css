@@ -21,9 +21,14 @@
   -webkit-text-size-adjust: 100%;
 }
 
+body {
+  margin: 0;
+}
+
 .container {
   margin: 0;
-  padding-top: 10vh;
+  width: 100vw;
+  height: 100vh;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -44,6 +49,14 @@
 .row {
   display: flex;
   justify-content: center;
+  flex-direction: column;
+  align-items: center;
+}
+
+.row button {
+  min-width: min(200px, 100vw);
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
 }
 
 a {
@@ -57,7 +70,10 @@ a:hover {
 }
 
 h1 {
+  font-size: 2.5em;
   text-align: center;
+  margin-top: -10vh;
+  margin-bottom: 12vh;
 }
 
 input,
@@ -72,6 +88,9 @@ button {
   background-color: #ffffff;
   transition: border-color 0.25s;
   box-shadow: 0 2px 2px rgba(0, 0, 0, 0.2);
+  /* text-overflow: ellipsis; */
+  /* overflow: hidden; */
+  max-width: 20vw;
 }
 
 button {

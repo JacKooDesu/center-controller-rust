@@ -6,9 +6,13 @@ interface Props {
 
 export default function Title({ com }: Props) {
   return (
-    <div className="row">
-      <button onClick={() => com.setMode(Mode.singleMode)}>一對一模式</button>
-      <button onClick={() => com.setMode(Mode.multiMode)}>一對多模式</button>
+    <div className="container">
+      <h1>Center Controller Extend</h1>
+      <div className="row">
+        <button onClick={() => com.setMode(Mode.singleMode)}>一對一</button>
+        <button onClick={() => com.setMode(Mode.multiMode)}>一對多</button>
+        <button>學習歷程</button>
+      </div>
     </div>
   );
 }
