@@ -1,9 +1,16 @@
+use serde_json::Value;
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use std::ops::Deref;
+use std::path::PathBuf;
 use std::sync::Arc;
+use tokio::fs::{File, ReadDir};
+use tokio::io::AsyncWriteExt;
 use tokio::{net::UdpSocket, task::JoinHandle};
 
-use crate::fm_network::action::{ClientChangedDetail, FMAction, JpegDecodedDetail};
+use crate::fm_network::action::{
+    ClientChangedDetail, FMAction, HistorySavedDetail, JpegDecodedDetail,
+};
 use crate::fm_network::client::ClientStatus;
 use crate::fm_network::jpeg_decoder::{JPEGDecoder, JPEGHeader};
 use crate::fm_network::packet::FMPacket;
@@ -78,9 +85,15 @@ impl SocketHandler {
                         };
                         emit_action(action).await;
 
-                        if let FMPacket::JPEGPacket { header, data } = packet.deref() {
-                            decode_jpeg_packet(addr, header.to_owned(), data).await;
-                        }
+                        match packet.deref() {
+                            FMPacket::JPEGPacket { header, data } => {
+                                decode_jpeg_packet(addr, header.to_owned(), data).await
+                            }
+                            FMPacket::PlayHistoryPacket { json } => {
+                                save_play_history(&json).await;
+                            }
+                            _ => {}
+                        };
                     }
                     Err(e) => {
                         eprintln!("Error receiving data: {}", e);
@@ -171,5 +184,32 @@ async fn decode_jpeg_packet(addr: SocketAddr, header: JPEGHeader, data: &Vec<u8>
             eprintln!("Error appending JPEG data: {}", e);
         }
         _ => {}
+    }
+}
+
+async fn save_play_history(json: &str) {
+    if let Ok(play_history_map) = serde_json::from_str::<HashMap<String, Value>>(json) {
+        if let Some(user_id) = play_history_map.get("userId") {
+            let user_id = user_id.as_str().unwrap_or("unknown");
+            let mut file_path = PathBuf::new();
+            file_path.push("./play_history");
+            tokio::fs::create_dir_all(&file_path).await.ok();
+            file_path.push(format!("{}.json", user_id));
+
+            if let Ok(mut file) = File::create(&file_path).await {
+                if let Err(e) = file.write_all(json.as_bytes()).await {
+                    eprintln!("Error writing play history to file: {}", e);
+                } else {
+                    emit_action(FMAction::HistorySaved(HistorySavedDetail::new(
+                        user_id,
+                        file_path.to_str().unwrap_or("<<path missing>>"),
+                    )))
+                    .await;
+                    println!("Play history saved to file: {}", file_path.display());
+                }
+            } else {
+                eprintln!("Error creating play history file: {}", file_path.display());
+            }
+        }
     }
 }

@@ -11,6 +11,7 @@ pub enum FMAction<'a> {
         addr: SocketAddr,
         packet: Arc<FMPacket>,
     },
+    HistorySaved(HistorySavedDetail<'a>),
 }
 
 #[derive(Serialize, Debug)]
@@ -23,6 +24,12 @@ pub(crate) struct ClientChangedDetail {
 pub(crate) struct JpegDecodedDetail<'a> {
     addr: SocketAddr,
     data: &'a Vec<u8>,
+}
+
+#[derive(Serialize, Debug)]
+pub(crate) struct HistorySavedDetail<'a> {
+    player_id: &'a str,
+    file_path: &'a str,
 }
 
 impl ClientChangedDetail {
@@ -41,5 +48,14 @@ impl ClientChangedDetail {
 impl<'a> JpegDecodedDetail<'a> {
     pub fn new(addr: SocketAddr, data: &'a Vec<u8>) -> Self {
         Self { addr, data }
+    }
+}
+
+impl<'a> HistorySavedDetail<'a> {
+    pub fn new(player_id: &'a str, file_path: &'a str) -> Self {
+        Self {
+            player_id,
+            file_path,
+        }
     }
 }

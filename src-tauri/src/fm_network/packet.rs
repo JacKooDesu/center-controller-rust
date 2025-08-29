@@ -5,6 +5,7 @@ pub enum FMPacket {
     Heartbeat,
     StringPacket { data: String },
     JPEGPacket { header: JPEGHeader, data: Vec<u8> },
+    PlayHistoryPacket { json: String },
 }
 
 impl FMPacket {
@@ -23,6 +24,7 @@ impl FMPacket {
                 data: raw_data[20..].to_vec(),
             },
             1 => Self::decode_string(&raw_data[2..]),
+            2 => Self::decode_play_history(&raw_data[2..]),
             _ => Self::Unknown,
         }
     }
@@ -30,6 +32,11 @@ impl FMPacket {
     fn decode_string(bytes: &[u8]) -> Self {
         let data = String::from_utf8_lossy(&bytes[0..]).into_owned();
         Self::StringPacket { data }
+    }
+
+    fn decode_play_history(bytes: &[u8]) -> Self {
+        let json = String::from_utf8_lossy(&bytes[0..]).into_owned();
+        Self::PlayHistoryPacket { json }
     }
 
     pub(crate) fn to_bytes(&self) -> Option<Vec<u8>> {

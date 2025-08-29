@@ -22,6 +22,11 @@ async fn start_udp<R: Runtime>(window: Window<R>) {
                 .app_handle()
                 .emit_to(window.label(), "fm://jpeg_decoded", detail);
         }
+        FMAction::HistorySaved(detail) => {
+            let _ = window
+                .app_handle()
+                .emit_to(window.label(), "fm://history_saved", detail);
+        }
         _ => {}
     })
     .await;
