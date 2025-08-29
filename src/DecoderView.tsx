@@ -15,6 +15,8 @@ export default function DecoderView({ addr, setFocus }: Props) {
     const [error, setError] = useState<boolean>(false);
 
     useEffect(() => {
+        if (addr === undefined)
+            return;
         console.log("registering listener for", addr);
         addJpgDecodedListener(addr, bytes => {
             updateJpeg(bytes);
@@ -34,7 +36,7 @@ export default function DecoderView({ addr, setFocus }: Props) {
 
     return (
         <>
-            <img src={error ? fallbackImg : jpegUrl}
+            <img src={error || addr === undefined ? fallbackImg : jpegUrl}
                 alt={addr}
                 onError={() => setError(true)}
                 onClick={() => setFocus && setFocus(addr)} />
