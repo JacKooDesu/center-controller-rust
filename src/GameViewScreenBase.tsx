@@ -3,6 +3,7 @@ import { CommonProps, Mode } from "./App";
 import { addClientChangeListener, ClientChangedData, send, startUdp, stopUdp } from "./RustBridge";
 import DecoderView from "./DecoderView";
 import "./GameViewScreen.css"
+import NavBar from "./NavBar";
 
 interface Props {
     com: CommonProps;
@@ -62,23 +63,17 @@ export default function GameViewScreenBase({ com }: Props) {
                 (<></>);
 
         return (
-            <div className="navbar">
-                <button onClick={onReturnClick}>返回</button>
-                <div style={{ display: "flex", gap: "8px" }}>
-                    {clients.length > 0 && (
+            <NavBar com={com} onReturnCb={async () => await stopUdp()}>
+                {
+                    clients.length > 0 && (
                         <>
                             {exportBtn}
                             {resizeBtn}
                         </>
-                    )}
-                </div>
-            </div>
+                    )
+                }
+            </NavBar >
         );
-    }
-
-    async function onReturnClick() {
-        await stopUdp();
-        com.setMode(Mode.title)
     }
 
     async function onClientChange({ add, remove }: ClientChangedData) {
