@@ -58,3 +58,7 @@ export async function send(addr: string, msg: string) {
 
     await invoke("send_msg", { addr: arr[0], msg: msg });
 }
+
+export async function query_play_history(): Promise<string> {
+    return await invoke("query_play_histories");
+}

@@ -3,11 +3,13 @@ import { useReducer } from "react";
 import "./App.css";
 import Title from "./Title";
 import GameViewScreenBase from "./GameViewScreenBase";
+import PlayHistory from "./PlayHIstory";
 
 export enum Mode {
   title,
   singleMode,
   multiMode,
+  playHistory,
   layoutTest
 }
 
@@ -54,6 +56,11 @@ function App() {
         return (
           <GameViewScreenBase com={commonProps}></GameViewScreenBase>
         );
+
+      case Mode.playHistory:
+        return (
+          <PlayHistory com={commonProps}></PlayHistory>
+        )
     }
   })();
 
