@@ -17,6 +17,8 @@ use crate::fm_network::{
 const FM_SERVER_PORT: u16 = 3333;
 const FM_CLIENT_PORT: u16 = 3334;
 
+pub(crate) const PLAY_HISTORY_PATH: &str = "./play_history";
+
 lazy_static! {
     static ref CLIENTS: RwLock<HashMap<SocketAddr, ClientStatus>> = RwLock::new(HashMap::new());
     static ref SOCKET_HANDLER: RwLock<SocketHandler> = RwLock::new(SocketHandler::new());

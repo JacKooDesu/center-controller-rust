@@ -4,7 +4,7 @@ use std::net::SocketAddr;
 use std::ops::Deref;
 use std::path::PathBuf;
 use std::sync::Arc;
-use tokio::fs::{File, ReadDir};
+use tokio::fs::File;
 use tokio::io::AsyncWriteExt;
 use tokio::{net::UdpSocket, task::JoinHandle};
 
@@ -15,7 +15,7 @@ use crate::fm_network::client::ClientStatus;
 use crate::fm_network::jpeg_decoder::{JPEGDecoder, JPEGHeader};
 use crate::fm_network::packet::FMPacket;
 use crate::fm_network::{
-    emit_action, send, CLIENTS, FM_CLIENT_PORT, FM_SERVER_PORT, JPEG_DECODERS,
+    emit_action, send, CLIENTS, FM_CLIENT_PORT, FM_SERVER_PORT, JPEG_DECODERS, PLAY_HISTORY_PATH,
 };
 
 pub(crate) struct SocketHandler {
@@ -190,9 +190,9 @@ async fn decode_jpeg_packet(addr: SocketAddr, header: JPEGHeader, data: &Vec<u8>
 async fn save_play_history(json: &str) {
     if let Ok(play_history_map) = serde_json::from_str::<HashMap<String, Value>>(json) {
         if let Some(user_id) = play_history_map.get("userId") {
-            let user_id = user_id.as_str().unwrap_or("unknown");
+            let user_id = user_id.as_str().unwrap_or_else(|| "unknown");
             let mut file_path = PathBuf::new();
-            file_path.push("./play_history");
+            file_path.push(PLAY_HISTORY_PATH);
             tokio::fs::create_dir_all(&file_path).await.ok();
             file_path.push(format!("{}.json", user_id));
 
