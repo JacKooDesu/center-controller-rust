@@ -12,7 +12,7 @@ export default function Title({ com }: Props) {
         <button onClick={() => com.setMode(Mode.singleMode)}>一對一</button>
         <button onClick={() => com.setMode(Mode.multiMode)}>一對多</button>
         <button onClick={() => com.setMode(Mode.playHistory)}>學習歷程</button>
-        <button onClick={() => com.setMode(Mode.layoutTest)}>測試</button>
+        {/* <button onClick={() => com.setMode(Mode.layoutTest)}>測試</button> */}
       </div>
     </>
   );

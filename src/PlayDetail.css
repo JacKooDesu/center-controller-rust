@@ -1,0 +1,37 @@
+button.selected {
+    background-color: #111;
+    font-style: italic;
+}
+
+button.unselected {
+    background-color: #444;
+}
+
+
+.detail-table {
+  width: 100%;
+}
+.detail-table tr:nth-child(even) {
+  background-color: #333;
+}
+.detail-table tr:nth-last-child(1) {
+  background-color: #343;
+}
+
+.detail-table td,
+th {
+  border-bottom: 1px solid #444;
+  padding: 5px;
+}
+
+.detail-table tr td:nth-child(1) {
+  width: 50%;
+}
+
+.detail-table th {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: #555;
+}

@@ -52,7 +52,7 @@ function App() {
 
       case Mode.singleMode:
       case Mode.multiMode:
-      case Mode.layoutTest:
+      // case Mode.layoutTest:
         return (
           <GameViewScreenBase com={commonProps}></GameViewScreenBase>
         );

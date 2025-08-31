@@ -62,3 +62,11 @@ export async function send(addr: string, msg: string) {
 export async function query_play_history(): Promise<string> {
     return await invoke("query_play_histories");
 }
+
+export async function get_play_history(key: string | null | undefined) {
+    if (typeof (key) === 'string') {
+        let x = await invoke("get_history", { key: key });
+        console.log(x);
+        return x;
+    }
+}
