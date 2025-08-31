@@ -1,14 +1,14 @@
 use std::{
-    collections::{btree_map::OccupiedEntry, hash_map::Entry, HashMap},
-    vec,
+    collections::{hash_map::Entry, HashMap},
+    path::PathBuf,
 };
 
 use lazy_static::lazy_static;
 use serde_json::Value;
 use tauri::{Emitter, Manager, Runtime, Window};
 use tokio::{
-    fs::{read_dir, File, ReadDir},
-    io::{AsyncRead, AsyncReadExt},
+    fs::{read_dir, File},
+    io::{AsyncReadExt, AsyncWriteExt},
     sync::RwLock,
 };
 
@@ -39,10 +39,22 @@ async fn start_udp<R: Runtime>(window: Window<R>) {
                 .app_handle()
                 .emit_to(window.label(), "fm://jpeg_decoded", detail);
         }
-        FMAction::HistorySaved(detail) => {
-            let _ = window
-                .app_handle()
-                .emit_to(window.label(), "fm://history_saved", detail);
+        FMAction::HistoryReceived(detail) => {
+            let map = detail.map.to_owned();
+            let id = detail.player_id.to_owned();
+            let value = window.clone();
+            let _ = tokio::task::spawn(async move {
+                if let Some(path) = save_play_history(&id, &map).await {
+                    let _ = value.app_handle().emit_to(
+                        value.label(),
+                        "fm://history_saved",
+                        (&id, &path),
+                    );
+
+                    let mut cache = PLAY_HISTORY_CACHE.write().await;
+                    cache.insert(id, map);
+                };
+            });
         }
         _ => {}
     })
@@ -108,6 +120,40 @@ async fn query_play_histories() -> Result<String, String> {
     }
 }
 
+#[tauri::command]
+async fn get_history(key: String) -> Result<HashMap<String, Value>, ()> {
+    let cache = PLAY_HISTORY_CACHE.read().await;
+
+    if let Some(data) = cache.get(&key) {
+        return Ok(data.to_owned());
+    }
+
+    Err(())
+}
+
+async fn save_play_history(user_id: &String, map: &HashMap<String, Value>) -> Option<String> {
+    let mut file_path = PathBuf::new();
+    file_path.push(PLAY_HISTORY_PATH);
+    tokio::fs::create_dir_all(&file_path).await.ok();
+    file_path.push(format!("{}.json", user_id));
+
+    if let Ok(json) = serde_json::to_string(&map) {
+        if let Ok(mut file) = File::create(&file_path).await {
+            if let Err(e) = file.write_all(json.as_bytes()).await {
+                eprintln!("Error writing play history to file: {}", e);
+            } else if let Some(path) = file_path.to_str() {
+                println!("Play history saved to file: {}", file_path.display());
+
+                return Some(path.into());
+            }
+        } else {
+            eprintln!("Error creating play history file: {}", file_path.display());
+        }
+    }
+
+    None
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -117,7 +163,8 @@ pub fn run() {
             start_udp,
             stop_udp,
             send_msg,
-            query_play_histories
+            query_play_histories,
+            get_history
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

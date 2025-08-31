@@ -1,6 +1,7 @@
-use std::{net::SocketAddr, sync::Arc};
+use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 
 use serde::Serialize;
+use serde_json::Value;
 
 use crate::fm_network::packet::FMPacket;
 
@@ -11,7 +12,7 @@ pub enum FMAction<'a> {
         addr: SocketAddr,
         packet: Arc<FMPacket>,
     },
-    HistorySaved(HistorySavedDetail<'a>),
+    HistoryReceived(HistoryDetail<'a>),
 }
 
 #[derive(Serialize, Debug)]
@@ -27,9 +28,9 @@ pub(crate) struct JpegDecodedDetail<'a> {
 }
 
 #[derive(Serialize, Debug)]
-pub(crate) struct HistorySavedDetail<'a> {
-    player_id: &'a str,
-    file_path: &'a str,
+pub(crate) struct HistoryDetail<'a> {
+    pub(crate) player_id: &'a str,
+    pub(crate) map: HashMap<String, Value>,
 }
 
 impl ClientChangedDetail {
@@ -51,11 +52,8 @@ impl<'a> JpegDecodedDetail<'a> {
     }
 }
 
-impl<'a> HistorySavedDetail<'a> {
-    pub fn new(player_id: &'a str, file_path: &'a str) -> Self {
-        Self {
-            player_id,
-            file_path,
-        }
+impl<'a> HistoryDetail<'a> {
+    pub fn new(player_id: &'a str, map: HashMap<String, Value>) -> Self {
+        Self { player_id, map }
     }
 }
