@@ -22,6 +22,7 @@
 }
 
 body {
+  overscroll-behavior: none;
   margin: 0;
 }
 

@@ -10,8 +10,10 @@
   justify-content: space-around;
   grid-template-columns: repeat(3, 30vw);
   align-items: stretch;
-  max-height: 100%;
-  overflow: overlay;
+  max-height: 100vh;
+  overflow: hidden overlay;
+  max-width: 100vw;
+  row-gap: 10px;
 }
 
 .singleView img {
