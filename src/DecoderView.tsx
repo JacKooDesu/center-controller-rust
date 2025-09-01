@@ -10,6 +10,8 @@ interface Props {
     setFocus?: ((addr: string) => void) | null;
 }
 
+let jpegUrlLast: string = "";
+
 export default function DecoderView({ addr, setFocus }: Props) {
     const [jpegUrl, setJpeg] = useState<string>("");
     const [error, setError] = useState<boolean>(false);
@@ -24,11 +26,14 @@ export default function DecoderView({ addr, setFocus }: Props) {
     }, [addr]);
 
     function updateJpeg(bytes: []) {
-        if (jpegUrl.length > 0)
-            URL.revokeObjectURL(jpegUrl);
+        if (jpegUrlLast.length > 0) {
+            URL.revokeObjectURL(jpegUrlLast);
+        }
 
         const blob = new Blob([new Uint8Array(bytes)], { type: "image/jpeg" });
         const url = URL.createObjectURL(blob);
+
+        jpegUrlLast = url;
 
         setError(false);
         setJpeg(url);

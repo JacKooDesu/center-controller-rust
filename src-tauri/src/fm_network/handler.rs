@@ -55,40 +55,7 @@ impl SocketHandler {
             loop {
                 match arc_socket.recv_from(&mut buf).await {
                     Ok((len, addr)) => {
-                        let mut clients = CLIENTS.write().await;
-                        let origin_len = clients.len();
-                        let client = clients
-                            .entry(addr)
-                            .or_insert_with(|| ClientStatus::new(addr));
-
-                        client.update_heartbeat();
-                        let new_len = clients.len();
-
-                        if new_len > origin_len {
-                            emit_action(FMAction::ClientChanged(ClientChangedDetail::added(addr)))
-                                .await;
-                        }
-
-                        send(addr.into(), FMPacket::Heartbeat).await;
-
-                        let data = &buf[..len];
-
-                        let packet = Arc::new(FMPacket::new(data));
-                        let action = FMAction::PacketReceived {
-                            addr,
-                            packet: packet.clone(),
-                        };
-                        emit_action(action).await;
-
-                        match packet.deref() {
-                            FMPacket::JPEGPacket { header, data } => {
-                                decode_jpeg_packet(addr, header.to_owned(), data).await
-                            }
-                            FMPacket::PlayHistoryPacket { json } => {
-                                decode_play_history(&json).await;
-                            }
-                            _ => {}
-                        };
+                        Self::on_receive_raw(&buf, len, addr).await;
                     }
                     Err(e) => {
                         eprintln!("Error receiving data: {}", e);
@@ -139,6 +106,42 @@ impl SocketHandler {
         self.client_live_checker = None;
 
         println!("SocketHandler stopped");
+    }
+
+    async fn on_receive_raw(buf: &[u8], len: usize, addr: SocketAddr) {
+        let mut clients = CLIENTS.write().await;
+        let origin_len = clients.len();
+        let client = clients
+            .entry(addr)
+            .or_insert_with(|| ClientStatus::new(addr));
+
+        client.update_heartbeat();
+        let new_len = clients.len();
+
+        if new_len > origin_len {
+            emit_action(FMAction::ClientChanged(ClientChangedDetail::added(addr))).await;
+        }
+
+        send(addr.into(), FMPacket::Heartbeat).await;
+
+        let data = &buf[..len];
+
+        let packet = Arc::new(FMPacket::new(data));
+        let action = FMAction::PacketReceived {
+            addr,
+            packet: packet.clone(),
+        };
+        emit_action(action).await;
+
+        match packet.deref() {
+            FMPacket::JPEGPacket { header, data } => {
+                decode_jpeg_packet(addr, header.to_owned(), data).await
+            }
+            FMPacket::PlayHistoryPacket { json } => {
+                decode_play_history(&json).await;
+            }
+            _ => {}
+        };
     }
 
     pub(crate) async fn send(&self, mut addr: SocketAddr, packet: FMPacket) {
