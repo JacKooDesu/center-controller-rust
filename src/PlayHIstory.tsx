@@ -3,6 +3,7 @@ import NavBar from "./NavBar"
 import { CommonProps } from "./App"
 import { get_play_history, query_play_history } from "./RustBridge";
 
+import "./PlayHistory.css"
 import fallbackImg from "./assets/loading.svg";
 import PlayDetail, { PlayMissionData } from "./PlayDetail";
 
@@ -52,7 +53,10 @@ export default function PlayHistory({ com }: Props) {
                     overflow: 'hidden scroll',
                 }}>
                     {Array.from(histories?.keys())
-                        .map(k => (<button key={k} onClick={() => handlePlayerSelect(k)}>{k}</button>))}
+                        .map(k => (<button
+                            className={k === currentData?.userId ? "selected" : "unselected"}
+                            key={k}
+                            onClick={() => handlePlayerSelect(k)}>{k}</button>))}
                 </div>
             </div>
         );

@@ -1,4 +1,4 @@
-import "./PlayDetail.css"
+import "./PlayHistory.css"
 import { useState } from "react";
 
 export interface PlayMissionData {
