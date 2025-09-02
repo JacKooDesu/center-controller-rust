@@ -10,10 +10,17 @@ interface Props {
     setFocus?: ((addr: string) => void) | null;
 }
 
-let jpegUrlLast: string = "";
+let jpegUrls: string[] = [];
+
+function disposeJpegs() {
+    let url: string | undefined = undefined;
+    while ((url = jpegUrls.pop()) !== undefined) {
+        URL.revokeObjectURL(url);
+    }
+}
 
 export default function DecoderView({ addr, setFocus }: Props) {
-    const [jpegUrl, setJpeg] = useState<string>("");
+    const [, setJpegVersion] = useState<number>(0);
     const [error, setError] = useState<boolean>(false);
 
     useEffect(() => {
@@ -23,25 +30,25 @@ export default function DecoderView({ addr, setFocus }: Props) {
         addJpgDecodedListener(addr, bytes => {
             updateJpeg(bytes);
         });
+
+        return () => disposeJpegs();
     }, [addr]);
 
     function updateJpeg(bytes: []) {
-        if (jpegUrlLast.length > 0) {
-            URL.revokeObjectURL(jpegUrlLast);
-        }
+        disposeJpegs();
 
         const blob = new Blob([new Uint8Array(bytes)], { type: "image/jpeg" });
         const url = URL.createObjectURL(blob);
 
-        jpegUrlLast = url;
+        jpegUrls.push(url);
 
         setError(false);
-        setJpeg(url);
+        setJpegVersion(v => v + 1);
     }
 
     return (
         <>
-            <img src={error || addr === undefined ? fallbackImg : jpegUrl}
+            <img src={error || addr === undefined ? fallbackImg : jpegUrls[0]}
                 alt={addr}
                 onError={() => setError(true)}
                 onClick={() => setFocus && setFocus(addr)} />
