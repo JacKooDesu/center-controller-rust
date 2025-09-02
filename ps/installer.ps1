@@ -1,7 +1,7 @@
-$bitness = if ([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -eq "X64") {
+$bitness = if ([System.Runtime.InteropServices.RuntimeInformation, mscorlib]::ProcessArchitecture -eq "X64") {
     "x86_64"
 }
-elseif ([System.Runtime.InteropServices.RuntimeInformation]::ProcessArchitecture -eq "Arm64") {
+elseif ([System.Runtime.InteropServices.RuntimeInformation, mscorlib]::ProcessArchitecture -eq "Arm64") {
     "aarch64"
 }
 else {
