@@ -3,7 +3,7 @@
   display: flex;
   flex-direction: column-reverse;
   justify-content: end;
-  gap: 10px 0px;
+  /* gap: 10px 0px; */
   max-width: 400px;
   min-width: 200px;
   width: 20vw;
@@ -22,35 +22,43 @@
   max-height: fit-content;
   width: 100%;
   animation: slide-in 0.5s cubic-bezier(0.01, 1.06, 0.57, 1.08);
+  margin-top: 10px;
 }
 
 .message-popup > div {
-  color: #ddd;
+  color: #eee;
   font-size: 12px;
-  background-color: #033;
+  background-color: #155;
   margin: 1px;
   border-radius: 8px;
-  border: 1px solid #011;
+  border: 1px solid rgb(0, 43, 43);
+  padding: 0px 5px 0px 5px;
 }
 
 @keyframes slide-in {
   0% {
-    transform: scale(1) translate(200%, 0%);
+    transform: translate(100%, 0%);
     opacity: 0;
   }
   100% {
-    transform: scale(1) translate(0%, 0%);
-    opacity: 1;
+    transform: translate(0%, 0%);
   }
 }
 
 @keyframes slide-out {
   0% {
-    transform: scale(1) translate(0%, 0%);
-    opacity: 1;
+    transform: translate(0%, 0%);
+  }
+  80% {
+    transform: translate(90%, 0%);
+    opacity: 0;
+    overflow: hidden;
+    margin-top: 0px;
   }
   100% {
-    transform: scale(1) translate(200%, 0%);
+    overflow: hidden;
     opacity: 0;
+    height: 0%;
+    margin-top: 0px;
   }
 }

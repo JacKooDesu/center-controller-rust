@@ -31,7 +31,7 @@ export default function MessageQueue({ com }: Props) {
 
     useEffect(() => {
         addHistorySavedListener("messagePopup", (data) => {
-            appendMessage(`使用者 ${data.userId} 遊玩資料已儲存至 ${data.filePath}。`);
+            appendMessage(`使用者 ${data.userId} 遊玩資料已儲存至 ${data.filePath}`);
             updateMessageQueue(({ arr, version }) => ({
                 arr,
                 version: version + 1
@@ -40,10 +40,10 @@ export default function MessageQueue({ com }: Props) {
 
         addClientChangeListener("messagePopup", (data) => {
             if (data.add) {
-                appendMessage(`使用者 ${data.add} 已連入。`);
+                appendMessage(`IP：${data.add} 已連入`);
             }
             if (data.remove) {
-                appendMessage(`使用者 ${data.remove} 已斷線。`);
+                appendMessage(`IP：${data.remove} 已斷線`);
             }
             updateMessageQueue(({ arr, version }) => ({
                 arr,
@@ -58,9 +58,19 @@ export default function MessageQueue({ com }: Props) {
             version: version + 1
         }));
         setTimeout(() => updateMessageQueue(({ arr, version }) => {
-            let first = arr[0];
-            first.out = true;
-            return { arr: [...arr], version };
+            let left: Array<MessageQueueItem> = [];
+            let current = undefined;
+            while (current = arr.shift()) {
+                if (!current.out) {
+                    current.out = true;
+                    break;
+                }
+                left.push(current);
+            }
+
+            return current ?
+                { arr: [...left, current, ...arr], version } :
+                { arr: [...left, ...arr], version };
         }), showMiliSec);
         setTimeout(() => updateMessageQueue(({ arr, version }) => ({
             arr: arr.slice(1),
