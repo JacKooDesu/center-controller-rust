@@ -26,7 +26,7 @@ export default function PlayDetail({ missionDatas }: Props) {
     }
 
     function renderStgDatas() {
-        if (missionDatas === undefined)
+        if (missionDatas === undefined || missionDatas.length === 0)
             return <></>;
 
         return (
