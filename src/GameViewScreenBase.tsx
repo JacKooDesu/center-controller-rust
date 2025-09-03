@@ -9,10 +9,8 @@ interface Props {
     com: CommonProps;
 }
 
-let clients: string[] = [];
-
 export default function GameViewScreenBase({ com }: Props) {
-    const [, setClientCount] = useState<number>(0);
+    const [clients, updateClients] = useState<string[]>([]);
     const [focusTarget, setFocusing] = useState<string>("");
     const IsFocusing = () =>
         com.currentMode === Mode.multiMode &&
@@ -32,8 +30,6 @@ export default function GameViewScreenBase({ com }: Props) {
 
         startUdp();
         addClientChangeListener("GameViewScreenBase", onClientChange);
-
-        return () => { clients = []; };
     }, [com.currentMode]);
 
     function navbarElement() {
@@ -81,16 +77,16 @@ export default function GameViewScreenBase({ com }: Props) {
             if (com.currentMode === Mode.singleMode) {
                 if (clients.length == 0)
                     await send(add, "screen1");
+                else
+                    await send(add, "screen2");
             } else {
                 await send(add, IsFocusing() ? "screen5" : "screen2");
             }
 
-            clients.push(add);
+            updateClients(clients => [...clients, add]);
         } else if (remove) {
-            clients = clients.filter(c => c != remove);
+            updateClients(clients => clients.filter(c => c != remove));
         }
-
-        setClientCount(clients.length);
     }
 
     console.log("Clients:", clients);
