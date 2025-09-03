@@ -4,6 +4,7 @@ import "./App.css";
 import Title from "./Title";
 import GameViewScreenBase from "./GameViewScreenBase";
 import PlayHistory from "./PlayHIstory";
+import MessageQueue from "./MessageQueue";
 
 export enum Mode {
   title,
@@ -52,9 +53,12 @@ function App() {
 
       case Mode.singleMode:
       case Mode.multiMode:
-      // case Mode.layoutTest:
+        // case Mode.layoutTest:
         return (
-          <GameViewScreenBase com={commonProps}></GameViewScreenBase>
+          <>
+            <GameViewScreenBase com={commonProps}></GameViewScreenBase>
+            <MessageQueue com={commonProps}></MessageQueue>
+          </>
         );
 
       case Mode.playHistory:

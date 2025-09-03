@@ -3,10 +3,6 @@ import { listen, UnlistenFn } from "@tauri-apps/api/event";
 
 let listening: Map<string, UnlistenFn> = new Map();
 
-export interface MessageData<T> {
-    payload: T
-};
-
 export interface JPEGData {
     addr: string;
     data: [];
@@ -15,6 +11,11 @@ export interface JPEGData {
 export interface ClientChangedData {
     add: string | null;
     remove: string | null;
+}
+
+export interface HistorySavedData {
+    userId: string | null;
+    filePath: string | null;
 }
 
 export async function startUdp() {
@@ -43,6 +44,21 @@ export async function addJpgDecodedListener(id: string, cb: (bytes: []) => void)
             if (data.addr == id)
                 cb(data.data);
         });
+}
+
+export async function addHistorySavedListener(id: string, cb: (data: HistorySavedData) => void) {
+    await addListener<Array<string>>(
+        id + "_historySavedListener",
+        "fm://history_saved",
+        arr => {
+            if (arr.length != 2) return;
+            let data: HistorySavedData = {
+                userId: arr[0],
+                filePath: arr[1].replace('/', '\\')
+            };
+            cb(data);
+        }
+    )
 }
 
 async function addListener<TData>(id: string, endpoint: string, cb: (data: TData) => void) {

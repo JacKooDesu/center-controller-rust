@@ -1,0 +1,56 @@
+.message-queue-container {
+  position: absolute;
+  display: flex;
+  flex-direction: column-reverse;
+  justify-content: end;
+  gap: 10px 0px;
+  max-width: 400px;
+  min-width: 200px;
+  width: 20vw;
+  height: 95vh;
+  right: 0;
+  margin: 20px 10px 20px 10px;
+  overflow: clip;
+  overflow-clip-margin: 10px;
+
+  pointer-events: none;
+}
+
+.message-popup {
+  overflow-wrap: break-word;
+  opacity: 0.8;
+  max-height: fit-content;
+  width: 100%;
+  animation: slide-in 0.5s cubic-bezier(0.01, 1.06, 0.57, 1.08);
+}
+
+.message-popup > div {
+  color: #ddd;
+  font-size: 12px;
+  background-color: #033;
+  margin: 1px;
+  border-radius: 8px;
+  border: 1px solid #011;
+}
+
+@keyframes slide-in {
+  0% {
+    transform: scale(1) translate(200%, 0%);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) translate(0%, 0%);
+    opacity: 1;
+  }
+}
+
+@keyframes slide-out {
+  0% {
+    transform: scale(1) translate(0%, 0%);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) translate(200%, 0%);
+    opacity: 0;
+  }
+}
